@@ -5,10 +5,12 @@ import {
   VStack,
   Heading,
   Box,
-  useColorModeValue
+  useColorModeValue,
+  useToast
 } from '@chakra-ui/react';
 import { TaskCard } from './TaskCard';
 import { useTaskStore } from '../../store/taskStore';
+import { socketService } from '../../services/socket';
 import type { Task } from '../../types';
 
 interface TaskBoardProps {
@@ -25,17 +27,90 @@ const COLUMNS = [
 export const TaskBoard = ({ projectId, onEditTask }: TaskBoardProps) => {
   const { tasks, fetchProjectTasks, updateTask, deleteTask, isLoading } = useTaskStore();
   const columnBg = useColorModeValue('gray.50', 'gray.700');
+  const toast = useToast();
 
   useEffect(() => {
     fetchProjectTasks(projectId);
-  }, [projectId, fetchProjectTasks]);
+
+    // Connect to socket and join project room
+    const socket = socketService.connect();
+    socketService.joinProject(projectId);
+
+    // Listen for task updates
+    socketService.onTaskUpdated((updatedTask) => {
+      if (updatedTask.project === projectId) {
+        fetchProjectTasks(projectId);
+        toast({
+          title: 'Task Updated',
+          description: `Task "${updatedTask.title}" has been updated`,
+          status: 'info',
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+    });
+
+    // Listen for new tasks
+    socketService.onTaskCreated((newTask) => {
+      if (newTask.project === projectId) {
+        fetchProjectTasks(projectId);
+        toast({
+          title: 'New Task',
+          description: `Task "${newTask.title}" has been created`,
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+    });
+
+    // Listen for deleted tasks
+    socketService.onTaskDeleted((taskId) => {
+      fetchProjectTasks(projectId);
+      toast({
+        title: 'Task Deleted',
+        description: 'A task has been deleted',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true,
+      });
+    });
+
+    // Cleanup
+    return () => {
+      socketService.leaveProject(projectId);
+      socketService.cleanup();
+    };
+  }, [projectId, fetchProjectTasks, toast]);
 
   const handleStatusChange = async (taskId: string, newStatus: Task['status']) => {
-    await updateTask(taskId, { status: newStatus });
+    try {
+      await updateTask(taskId, { status: newStatus });
+      // Socket will handle the update notification
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update task status',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
   };
 
   const handleDeleteTask = async (taskId: string) => {
-    await deleteTask(taskId);
+    try {
+      await deleteTask(taskId);
+      // Socket will handle the delete notification
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete task',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
   };
 
   const getColumnTasks = (status: Task['status']) => {

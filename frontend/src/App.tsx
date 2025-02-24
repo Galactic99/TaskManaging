@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ChakraProvider } from '@chakra-ui/react';
+import { ChakraProvider, Center, Spinner } from '@chakra-ui/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
@@ -14,11 +14,23 @@ import { useAuthStore } from './store/authStore';
 const queryClient = new QueryClient();
 
 function App() {
-  const { checkAuth } = useAuthStore();
+  const { checkAuth, isInitialized } = useAuthStore();
 
   useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
+    if (!isInitialized) {
+      checkAuth();
+    }
+  }, [checkAuth, isInitialized]);
+
+  if (!isInitialized) {
+    return (
+      <ChakraProvider>
+        <Center h="100vh">
+          <Spinner size="xl" color="blue.500" thickness="4px" />
+        </Center>
+      </ChakraProvider>
+    );
+  }
 
   return (
     <ChakraProvider>

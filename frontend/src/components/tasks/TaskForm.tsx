@@ -59,12 +59,16 @@ export const TaskForm = ({ projectId, members, task, onSuccess }: TaskFormProps)
     if (!validate()) return;
 
     try {
+      console.log('Form submission:', { formData, isUpdate: !!task });
+
       const taskData = {
         ...formData,
-        projectId
+        dueDate: formData.dueDate || null,
+        assignees: formData.assignees
       };
 
       if (task) {
+        console.log('Updating task:', { taskId: task._id, taskData });
         await updateTask(task._id, taskData);
         toast({
           title: 'Task updated',
@@ -73,7 +77,7 @@ export const TaskForm = ({ projectId, members, task, onSuccess }: TaskFormProps)
           isClosable: true
         });
       } else {
-        await createTask(taskData);
+        await createTask({ ...taskData, projectId });
         toast({
           title: 'Task created',
           status: 'success',
@@ -83,9 +87,10 @@ export const TaskForm = ({ projectId, members, task, onSuccess }: TaskFormProps)
       }
       onSuccess();
     } catch (error: any) {
+      console.error('Task form error:', error);
       toast({
         title: 'Error',
-        description: error.message,
+        description: error.response?.data?.error || 'Failed to save task',
         status: 'error',
         duration: 3000,
         isClosable: true
@@ -98,6 +103,10 @@ export const TaskForm = ({ projectId, members, task, onSuccess }: TaskFormProps)
   ) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    // Clear error when field is modified
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
   };
 
   const handleAssigneesChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -131,7 +140,11 @@ export const TaskForm = ({ projectId, members, task, onSuccess }: TaskFormProps)
 
       <FormControl>
         <FormLabel>Status</FormLabel>
-        <Select name="status" value={formData.status} onChange={handleChange}>
+        <Select 
+          name="status" 
+          value={formData.status} 
+          onChange={handleChange}
+        >
           <option value="todo">To Do</option>
           <option value="in-progress">In Progress</option>
           <option value="done">Done</option>

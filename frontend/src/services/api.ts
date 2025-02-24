@@ -24,6 +24,26 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Add response interceptor for debugging
+api.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response) {
+      console.error('API Error Response:', {
+        status: error.response.status,
+        data: error.response.data,
+        headers: error.response.headers,
+        config: {
+          url: error.config.url,
+          method: error.config.method,
+          data: error.config.data
+        }
+      });
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Auth API
 export const auth = {
   register: (data: RegisterCredentials) => 
@@ -62,7 +82,7 @@ export const tasks = {
   create: (data: {
     title: string;
     description?: string;
-    dueDate?: string;
+    dueDate?: string | null;
     assignees?: string[];
     projectId: string;
   }) =>
@@ -77,10 +97,12 @@ export const tasks = {
     title?: string;
     description?: string;
     status?: 'todo' | 'in-progress' | 'done';
-    dueDate?: string;
+    dueDate?: string | null;
     assignees?: string[];
-  }) =>
-    api.patch<Task>(`/tasks/${id}`, data),
+  }) => {
+    console.log('API update request:', { id, data });
+    return api.patch<Task>(`/tasks/${id}`, data);
+  },
   
   delete: (id: string) =>
     api.delete(`/tasks/${id}`)

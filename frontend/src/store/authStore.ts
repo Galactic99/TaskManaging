@@ -6,6 +6,7 @@ interface AuthState {
   user: User | null;
   isLoading: boolean;
   error: string | null;
+  isInitialized: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (credentials: RegisterCredentials) => Promise<void>;
   logout: () => void;
@@ -14,8 +15,9 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
-  isLoading: false,
+  isLoading: true, // Start with true since we'll check auth on init
   error: null,
+  isInitialized: false,
 
   login: async (credentials) => {
     try {
@@ -54,11 +56,16 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   checkAuth: async () => {
     try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No token found');
+      }
+
       set({ isLoading: true, error: null });
       const { data } = await auth.getCurrentUser();
-      set({ user: data, isLoading: false });
+      set({ user: data, isLoading: false, isInitialized: true });
     } catch (error) {
-      set({ user: null, isLoading: false });
+      set({ user: null, isLoading: false, isInitialized: true });
       localStorage.removeItem('token');
     }
   }

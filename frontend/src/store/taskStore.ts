@@ -18,7 +18,7 @@ interface TaskState {
     title?: string;
     description?: string;
     status?: 'todo' | 'in-progress' | 'done';
-    dueDate?: string;
+    dueDate?: string | null;
     assignees?: string[];
   }) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
@@ -39,13 +39,19 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         error: error.response?.data?.error || 'Failed to fetch tasks',
         isLoading: false
       });
+      throw error;
     }
   },
 
   createTask: async (taskData) => {
     try {
       set({ isLoading: true, error: null });
-      const { data } = await tasksApi.create(taskData);
+      const formattedData = {
+        ...taskData,
+        dueDate: taskData.dueDate || null,
+        assignees: taskData.assignees || []
+      };
+      const { data } = await tasksApi.create(formattedData);
       set(state => ({
         tasks: [...state.tasks, data],
         isLoading: false
@@ -62,12 +68,39 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   updateTask: async (id, taskData) => {
     try {
       set({ isLoading: true, error: null });
-      const { data } = await tasksApi.update(id, taskData);
+      
+      // Log the update request
+      console.log('Updating task:', { id, taskData });
+
+      // Ensure status is properly formatted
+      let formattedData = { ...taskData };
+      if (taskData.status) {
+        formattedData.status = taskData.status.toLowerCase().replace(/_/g, '-');
+      }
+      
+      // Format other fields
+      formattedData = {
+        ...formattedData,
+        dueDate: taskData.dueDate || null,
+        assignees: taskData.assignees || []
+      };
+
+      console.log('Formatted update data:', formattedData);
+
+      const { data } = await tasksApi.update(id, formattedData);
+      
+      console.log('Update response:', data);
+
       set(state => ({
         tasks: state.tasks.map(t => t._id === id ? data : t),
         isLoading: false
       }));
     } catch (error: any) {
+      console.error('Task update error:', {
+        error: error.response?.data || error.message,
+        taskId: id,
+        taskData
+      });
       set({
         error: error.response?.data?.error || 'Failed to update task',
         isLoading: false

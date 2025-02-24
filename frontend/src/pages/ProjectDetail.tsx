@@ -30,6 +30,7 @@ import { useProjectStore } from '../store/projectStore';
 import { TaskBoard } from '../components/tasks/TaskBoard';
 import { TaskForm } from '../components/tasks/TaskForm';
 import type { Task } from '../types';
+import { socketService } from '../services/socket';
 
 export const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -67,8 +68,46 @@ export const ProjectDetail = () => {
   useEffect(() => {
     if (id) {
       fetchProject(id);
+
+      // Connect to socket and join project room
+      const socket = socketService.connect();
+      socketService.joinProject(id);
+
+      // Listen for project updates
+      socketService.onProjectUpdated((updatedProject) => {
+        if (updatedProject._id === id) {
+          fetchProject(id);
+          toast({
+            title: 'Project Updated',
+            description: 'Project details have been updated',
+            status: 'info',
+            duration: 3000,
+            isClosable: true,
+          });
+        }
+      });
+
+      // Listen for new members
+      socketService.onMemberAdded(({ projectId, user }) => {
+        if (projectId === id) {
+          fetchProject(id);
+          toast({
+            title: 'New Team Member',
+            description: `${user.username} has joined the project`,
+            status: 'success',
+            duration: 3000,
+            isClosable: true,
+          });
+        }
+      });
+
+      // Cleanup
+      return () => {
+        socketService.leaveProject(id);
+        socketService.cleanup();
+      };
     }
-  }, [id, fetchProject]);
+  }, [id, fetchProject, toast]);
 
   useEffect(() => {
     if (currentProject) {
@@ -87,12 +126,7 @@ export const ProjectDetail = () => {
     try {
       await updateProject(currentProject._id, editData);
       setIsEditing(false);
-      toast({
-        title: 'Project updated',
-        status: 'success',
-        duration: 3000,
-        isClosable: true
-      });
+      // Socket will handle the update notification
     } catch (error: any) {
       toast({
         title: 'Error updating project',
@@ -130,12 +164,7 @@ export const ProjectDetail = () => {
       await addMember(currentProject._id, newMemberEmail);
       setNewMemberEmail('');
       onAddMemberClose();
-      toast({
-        title: 'Member added',
-        status: 'success',
-        duration: 3000,
-        isClosable: true
-      });
+      // Socket will handle the member added notification
     } catch (error: any) {
       toast({
         title: 'Error adding member',

@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
+const jwt = require('jsonwebtoken');
 const connectDB = require('./config/database');
 
 // Import routes
@@ -13,12 +14,40 @@ const taskRoutes = require('./routes/tasks');
 // Initialize app
 const app = express();
 const httpServer = createServer(app);
+
+// Configure CORS
+const allowedOrigins = process.env.NODE_ENV === 'production'
+  ? ['https://your-production-domain.com']
+  : ['http://localhost:5173', 'http://localhost:3000'];
+
+// Configure express CORS
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
+
+// Initialize Socket.IO with CORS
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.NODE_ENV === 'production' 
-      ? 'https://your-production-domain.com' 
-      : 'http://localhost:3000',
-    methods: ['GET', 'POST', 'PUT', 'DELETE']
+    origin: allowedOrigins,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true
+  }
+});
+
+// Socket.io middleware for authentication
+io.use((socket, next) => {
+  const token = socket.handshake.auth.token;
+  if (!token) {
+    return next(new Error('Authentication error'));
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    socket.userId = decoded.userId;
+    next();
+  } catch (err) {
+    next(new Error('Authentication error'));
   }
 });
 
@@ -26,8 +55,13 @@ const io = new Server(httpServer, {
 connectDB();
 
 // Middleware
-app.use(cors());
 app.use(express.json());
+
+// Make io available to our routes
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -36,23 +70,20 @@ app.use('/api/tasks', taskRoutes);
 
 // Socket.io connection handling
 io.on('connection', (socket) => {
-  console.log('A user connected');
+  console.log('User connected:', socket.userId);
 
   socket.on('join-project', (projectId) => {
     socket.join(projectId);
-    console.log(`User joined project: ${projectId}`);
+    console.log(`User ${socket.userId} joined project: ${projectId}`);
   });
 
-  socket.on('task-update', (updatedTask) => {
-    io.to(updatedTask.project).emit('task-updated', updatedTask);
-  });
-
-  socket.on('project-update', (updatedProject) => {
-    io.to(updatedProject._id).emit('project-updated', updatedProject);
+  socket.on('leave-project', (projectId) => {
+    socket.leave(projectId);
+    console.log(`User ${socket.userId} left project: ${projectId}`);
   });
 
   socket.on('disconnect', () => {
-    console.log('User disconnected');
+    console.log('User disconnected:', socket.userId);
   });
 });
 
