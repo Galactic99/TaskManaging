@@ -117,6 +117,36 @@ class SocketService {
     }
   }
 
+  emitCursorMove(projectId: string, position: { x: number; y: number }) {
+    if (this.socket?.connected) {
+      this.socket.emit('cursor-move', {
+        projectId,
+        position
+      });
+    }
+  }
+
+  onCursorMove(callback: (data: { userId: string; username: string; x: number; y: number }) => void) {
+    if (this.socket) {
+      this.socket.on('cursor-moved', callback);
+    }
+  }
+
+  emitChatMessage(projectId: string, message: { text: string; timestamp: number }) {
+    if (this.socket?.connected) {
+      this.socket.emit('chat-message', {
+        projectId,
+        message
+      });
+    }
+  }
+
+  onChatMessage(callback: (message: { id: string; userId: string; username: string; text: string; timestamp: number }) => void) {
+    if (this.socket) {
+      this.socket.on('chat-message', callback);
+    }
+  }
+
   cleanup() {
     if (this.socket) {
       this.socket.off('task-updated');
@@ -124,6 +154,8 @@ class SocketService {
       this.socket.off('task-deleted');
       this.socket.off('project-updated');
       this.socket.off('member-added');
+      this.socket.off('cursor-moved');
+      this.socket.off('chat-message');
     }
   }
 }

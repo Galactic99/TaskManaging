@@ -31,6 +31,8 @@ import { TaskBoard } from '../components/tasks/TaskBoard';
 import { TaskForm } from '../components/tasks/TaskForm';
 import type { Task } from '../types';
 import { socketService } from '../services/socket';
+import { CursorTracker } from '../components/shared/CursorTracker';
+import { ChatBox } from '../components/chat/ChatBox';
 
 export const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -190,6 +192,8 @@ export const ProjectDetail = () => {
   return (
     <Container maxW="container.xl" py={8}>
       <VStack spacing={8} align="stretch">
+        <CursorTracker projectId={currentProject._id} />
+        <ChatBox projectId={currentProject._id} />
         <HStack justify="space-between">
           {isEditing ? (
             <VStack align="stretch" flex={1}>

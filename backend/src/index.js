@@ -5,6 +5,7 @@ const { createServer } = require('http');
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
 const connectDB = require('./config/database');
+const User = require('./models/User');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -80,6 +81,42 @@ io.on('connection', (socket) => {
   socket.on('leave-project', (projectId) => {
     socket.leave(projectId);
     console.log(`User ${socket.userId} left project: ${projectId}`);
+  });
+
+  socket.on('chat-message', async ({ projectId, message }) => {
+    try {
+      const user = await User.findById(socket.userId).select('username');
+      if (user) {
+        const chatMessage = {
+          id: Date.now().toString(),
+          userId: socket.userId,
+          username: user.username,
+          text: message.text,
+          timestamp: message.timestamp
+        };
+        
+        // Broadcast to all users in the project, including sender
+        io.to(projectId).emit('chat-message', chatMessage);
+      }
+    } catch (error) {
+      console.error('Error handling chat message:', error);
+    }
+  });
+
+  socket.on('cursor-move', async ({ projectId, position }) => {
+    try {
+      const user = await User.findById(socket.userId).select('username');
+      if (user) {
+        socket.to(projectId).emit('cursor-moved', {
+          userId: socket.userId,
+          username: user.username,
+          x: position.x,
+          y: position.y
+        });
+      }
+    } catch (error) {
+      console.error('Error handling cursor movement:', error);
+    }
   });
 
   socket.on('disconnect', () => {
