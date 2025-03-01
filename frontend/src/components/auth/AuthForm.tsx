@@ -49,8 +49,15 @@ export const AuthForm = ({ type, onSubmit, isLoading }: AuthFormProps) => {
   };
 
   return (
-    <Box as="form" onSubmit={handleSubmit} width="100%" maxW="400px">
-      <VStack spacing={4}>
+    <Box 
+      as="form" 
+      onSubmit={handleSubmit} 
+      width="100%" 
+      maxW="400px" 
+      mx="auto"
+      textAlign="left"
+    >
+      <VStack spacing={4} align="stretch" w="100%">
         {type === 'register' && (
           <FormControl isRequired>
             <FormLabel>Username</FormLabel>

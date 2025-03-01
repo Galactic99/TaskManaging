@@ -190,52 +190,55 @@ export const ProjectDetail = () => {
   };
 
   return (
-    <Container maxW="container.xl" py={8}>
+    <Container maxW="container.xl" py={12}>
       <VStack spacing={8} align="stretch">
+        <Box h="20px" />
         <CursorTracker projectId={currentProject._id} />
         <ChatBox projectId={currentProject._id} />
-        <HStack justify="space-between">
-          {isEditing ? (
-            <VStack align="stretch" flex={1}>
-              <Input
-                value={editData.name}
-                onChange={(e) => setEditData({ ...editData, name: e.target.value })}
-                placeholder="Project name"
-              />
-              <Input
-                value={editData.description}
-                onChange={(e) => setEditData({ ...editData, description: e.target.value })}
-                placeholder="Project description"
-              />
-              <HStack>
-                <Button colorScheme="blue" onClick={handleEdit}>
-                  Save
-                </Button>
-                <Button onClick={() => setIsEditing(false)}>Cancel</Button>
-              </HStack>
-            </VStack>
-          ) : (
-            <>
-              <VStack align="start">
-                <Heading size="lg">{currentProject.name}</Heading>
-                <Text color="gray.600">{currentProject.description}</Text>
+        <Box py={4}>
+          <HStack justify="space-between">
+            {isEditing ? (
+              <VStack align="stretch" flex={1}>
+                <Input
+                  value={editData.name}
+                  onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                  placeholder="Project name"
+                />
+                <Input
+                  value={editData.description}
+                  onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+                  placeholder="Project description"
+                />
+                <HStack>
+                  <Button colorScheme="blue" onClick={handleEdit}>
+                    Save
+                  </Button>
+                  <Button onClick={() => setIsEditing(false)}>Cancel</Button>
+                </HStack>
               </VStack>
-              <HStack>
-                <IconButton
-                  aria-label="Edit project"
-                  icon={<EditIcon />}
-                  onClick={() => setIsEditing(true)}
-                />
-                <IconButton
-                  aria-label="Delete project"
-                  icon={<DeleteIcon />}
-                  colorScheme="red"
-                  onClick={handleDelete}
-                />
-              </HStack>
-            </>
-          )}
-        </HStack>
+            ) : (
+              <>
+                <VStack align="start">
+                  <Heading size="lg">{currentProject.name}</Heading>
+                  <Text color="gray.600">{currentProject.description}</Text>
+                </VStack>
+                <HStack>
+                  <IconButton
+                    aria-label="Edit project"
+                    icon={<EditIcon />}
+                    onClick={() => setIsEditing(true)}
+                  />
+                  <IconButton
+                    aria-label="Delete project"
+                    icon={<DeleteIcon />}
+                    colorScheme="red"
+                    onClick={handleDelete}
+                  />
+                </HStack>
+              </>
+            )}
+          </HStack>
+        </Box>
 
         <Box>
           <HStack justify="space-between" mb={4}>

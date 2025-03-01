@@ -9,6 +9,7 @@ import { ProjectDetail } from './pages/ProjectDetail';
 import { Layout } from './components/layout/Layout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { useAuthStore } from './store/authStore';
+import theme from './theme';
 
 // Create a client
 const queryClient = new QueryClient();
@@ -24,7 +25,7 @@ function App() {
 
   if (!isInitialized) {
     return (
-      <ChakraProvider>
+      <ChakraProvider theme={theme}>
         <Center h="100vh">
           <Spinner size="xl" color="blue.500" thickness="4px" />
         </Center>
@@ -33,7 +34,7 @@ function App() {
   }
 
   return (
-    <ChakraProvider>
+    <ChakraProvider theme={theme}>
       <QueryClientProvider client={queryClient}>
         <Router>
           <Layout>

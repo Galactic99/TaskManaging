@@ -7,9 +7,11 @@ interface LayoutProps {
 
 export const Layout = ({ children }: LayoutProps) => {
   return (
-    <Box minH="100vh" bg="gray.50">
+    <Box minH="100vh" bg="gray.50" m="0" p="0" overflow="hidden">
       <Navbar />
-      <Box pt="64px">{children}</Box>
+      <Box pt="64px" m="0" p="0" h="calc(100vh - 64px)" overflow="auto">
+        {children}
+      </Box>
     </Box>
   );
 }; 
